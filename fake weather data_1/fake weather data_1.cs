@@ -1,21 +1,21 @@
-using System.Collections.Generic;
-using System;
-
-using Skyline.DataMiner.Analytics.GenericInterface;
-using System.Globalization;
-
 namespace GQIIntegrationSPI
 {
-    [GQIMetaData(Name = "Belgium weather api (aka TotallyUnpredictableWeatherApi) ")]
-    public class GQIDataSourceFromCSVDouble : IGQIDataSource, IGQIInputArguments
+	using System;
+	using System.Collections.Generic;
+	using System.Globalization;
+	using Skyline.DataMiner.Analytics.GenericInterface;
+
+	[GQIMetaData(Name = "Belgium weather api (aka TotallyUnpredictableWeatherApi) ")]
+	public class GQIDataSourceFromCSVDouble : IGQIDataSource, IGQIInputArguments
     {
         private readonly GQIDateTimeArgument _argStart = new GQIDateTimeArgument("Start Time") { IsRequired = true };
         private readonly GQIDateTimeArgument _argEnd = new GQIDateTimeArgument("End Time") { IsRequired = true };
         private readonly GQIIntArgument _argIntervals = new GQIIntArgument("Number of intervals") { IsRequired = true };
+        private readonly Random _random = new Random();
 
-        private DateTime _Start;
-        private DateTime _End;
-        private int _NumberOfIntervals;
+        private DateTime _start;
+        private DateTime _end;
+        private int _numberOfIntervals;
 
         public GQIArgument[] GetInputArguments()
         {
@@ -24,9 +24,9 @@ namespace GQIIntegrationSPI
 
         public OnArgumentsProcessedOutputArgs OnArgumentsProcessed(OnArgumentsProcessedInputArgs args)
         {
-            _Start = args.GetArgumentValue(_argStart);
-            _End = args.GetArgumentValue(_argEnd);
-            _NumberOfIntervals = args.GetArgumentValue(_argIntervals);
+            _start = args.GetArgumentValue(_argStart);
+            _end = args.GetArgumentValue(_argEnd);
+            _numberOfIntervals = args.GetArgumentValue(_argIntervals);
 
             return new OnArgumentsProcessedOutputArgs();
         }
@@ -38,7 +38,7 @@ namespace GQIIntegrationSPI
             {
                 new GQIStringColumn("Weather type"),
                 new GQIDateTimeColumn("Start"),
-                new GQIDateTimeColumn("End")
+                new GQIDateTimeColumn("End"),
             };
         }
 
@@ -46,17 +46,18 @@ namespace GQIIntegrationSPI
         public GQIPage GetNextPage(GetNextPageInputArgs args)
         {
             List<GQIRow> rows = new List<GQIRow>();
-            TimeSpan interval = TimeSpan.FromTicks((_End - _Start).Ticks / _NumberOfIntervals);
-            DateTime start = _Start;
+            TimeSpan interval = TimeSpan.FromTicks((_end - _start).Ticks / _numberOfIntervals);
+            DateTime start = _start;
             DateTime end = start + interval;
 
-            for (int i = 0; i < _NumberOfIntervals; i++)
+            for (int i = 0; i < _numberOfIntervals; i++)
             {
-                rows.Add(new GQIRow(new[] {
+                rows.Add(new GQIRow(new[]
+				{
                     new GQICell { Value = GetWeather() },
                     new GQICell { Value = start.ToUniversalTime()},
-                    new GQICell { Value = end.ToUniversalTime()}
-                    }));
+                    new GQICell { Value = end.ToUniversalTime()},
+				}));
 
                 start = end;
                 end = start + interval;
@@ -64,22 +65,19 @@ namespace GQIIntegrationSPI
 
             return new GQIPage(rows.ToArray())
             {
-                HasNextPage = false
+                HasNextPage = false,
             };
         }
 
-        private Random _Random = new Random();
         private String GetWeather()
         {
             string[] options = { "rain", "sun" };
 
-
             // Generate a random index
-            int index = _Random.Next(0, options.Length);
+            int index = _random.Next(0, options.Length);
 
             // Select the string based on the index
             return options[index];
         }
-
     }
 }
